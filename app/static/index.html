@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>共同分析仓库 · 授权版本 / 执行 / 分页 / 缓存</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="glyph">◧</span>
+    <div>
+      <h1>共同分析仓库</h1>
+      <p>按项目授予行与列的读取范围 —— 查询、交付与缓存都带着授权版本</p>
+    </div>
+  </div>
+  <div class="who">
+    <label for="principal">当前身份</label>
+    <select id="principal"></select>
+    <span id="roleBadge" class="badge"></span>
+    <button id="resetBtn" class="ghost" title="重播种子数据">重置模拟</button>
+  </div>
+</header>
+
+<main>
+  <section class="panel policy" id="policyPanel">
+    <h2>授权策略选择 <span class="hint">查询启动时固定，还是每次交付重新检查？</span></h2>
+    <div class="policy-grid" id="policyGrid"></div>
+    <p class="caveat">已经交到客户端的分页与下载分块是冻结字节，<strong>无法收回</strong>；只有尚未交付的行与列会在每次交付前重新授权。</p>
+  </section>
+
+  <div class="columns">
+    <div class="col left">
+      <section class="panel" id="grantPanel">
+        <h2>我的授权 <span id="grantDigestLabel" class="mono dim"></span></h2>
+        <div id="grantProfile"></div>
+        <div id="grantEditor" hidden>
+          <h3>发布新授权版本 <span class="hint">管理员操作；会产生新版本，不删除旧版本</span></h3>
+          <div id="adminGrantForm"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>发起查询</h2>
+        <form id="queryForm">
+          <div class="field-row">
+            <label>授权模式
+              <select name="auth_mode" id="authMode">
+                <option value="recheck">每次交付重新检查（recheck）</option>
+                <option value="pinned">查询启动时固定（pinned）</option>
+              </select>
+            </label>
+            <label>慢查询模拟
+              <select name="delay" id="delay">
+                <option value="0">无延迟</option>
+                <option value="1.5">1.5 秒</option>
+                <option value="3">3 秒</option>
+              </select>
+            </label>
+          </div>
+          <fieldset>
+            <legend>组织范围（rows）</legend>
+            <div id="orgFilter" class="checks"></div>
+          </fieldset>
+          <fieldset>
+            <legend>分组维度（columns）</legend>
+            <div id="dimFilter" class="checks"></div>
+          </fieldset>
+          <fieldset>
+            <legend>度量（columns）</legend>
+            <div id="measureFilter" class="checks"></div>
+          </fieldset>
+          <details class="sqlbox">
+            <summary>或使用自由 SQL（只读，必须投影 organization）</summary>
+            <textarea id="rawSql" rows="3" placeholder="SELECT organization, SUM(revenue_cents) AS revenue_cents FROM metrics GROUP BY organization"></textarea>
+          </details>
+          <div class="actions">
+            <button type="submit" class="primary">启动查询</button>
+            <button type="button" id="scenarioBtn" class="secondary">运行样例：撤权撞上任务恢复</button>
+          </div>
+          <p id="launchError" class="error" hidden></p>
+        </form>
+      </section>
+
+      <section class="panel" id="queryPanel" hidden>
+        <h2>查询与执行计划</h2>
+        <div id="querySummary"></div>
+        <div class="subtabs" id="queryTabs">
+          <button data-tab="plan" class="active">执行计划</button>
+          <button data-tab="auth">授权对照</button>
+          <button data-tab="cache">缓存</button>
+          <button data-tab="results">结果分页</button>
+          <button data-tab="download">下载任务</button>
+        </div>
+        <div id="tab-plan" class="tabbody"></div>
+        <div id="tab-auth" class="tabbody" hidden></div>
+        <div id="tab-cache" class="tabbody" hidden></div>
+        <div id="tab-results" class="tabbody" hidden></div>
+        <div id="tab-download" class="tabbody" hidden></div>
+      </section>
+    </div>
+
+    <div class="col right">
+      <section class="panel">
+        <h2>交付账本 <span class="hint">已冻结的分页与下载分块</span></h2>
+        <div id="ledger"></div>
+      </section>
+
+      <section class="panel">
+        <h2>拒绝依据 <span id="denialCount" class="badge warn"></span></h2>
+        <p class="hint">每次撤权导致的拒绝都会记录可复核的代码与授权版本。</p>
+        <div id="denials" class="feed"></div>
+      </section>
+
+      <section class="panel">
+        <h2>授权版本历史</h2>
+        <div id="grantHistory" class="feed"></div>
+      </section>
+
+      <section class="panel">
+        <h2>缓存条目 <span class="hint">全局共享</span></h2>
+        <div id="cacheEntries" class="feed"></div>
+      </section>
+
+      <section class="panel">
+        <h2>审计流水</h2>
+        <div id="auditFeed" class="feed mono small"></div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<div id="toast" class="toast" hidden></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
